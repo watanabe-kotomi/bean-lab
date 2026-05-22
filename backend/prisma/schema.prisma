@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +5,103 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Locale {
+  EN
+  JA
+}
+
+enum RoastLevel {
+  LIGHT
+  MEDIUM
+  DARK
+}
+
+enum ProcessingMethod {
+  WASHED
+  NATURAL
+  HONEY
+  ANAEROBIC
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  locale       Locale   @default(EN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tasteProfile TasteProfile?
+}
+
+model CoffeeBean {
+  id               String           @id @default(uuid())
+  slug             String           @unique
+  origin           String
+  region           String?
+  altitude         Int?
+  processingMethod ProcessingMethod
+  roastLevel       RoastLevel
+
+  // Cupping scores on a 1–5 scale — mirrors TasteProfile for direct comparison
+  acidity    Int
+  bitterness Int
+  sweetness  Int
+  body       Int
+
+  // Stored as a plain array for MVP; normalize to a junction table when
+  // the recommendation engine needs weighted or translatable flavor nodes
+  flavorNotes String[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations BeanTranslation[]
+
+  @@index([isActive])
+}
+
+model BeanTranslation {
+  id          String     @id @default(uuid())
+  beanId      String
+  bean        CoffeeBean @relation(fields: [beanId], references: [id], onDelete: Cascade)
+  locale      Locale
+  name        String
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([beanId, locale])
+}
+
+model TasteProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Preference scores on the same 1–5 scale as CoffeeBean cupping scores
+  acidity    Int
+  bitterness Int
+  sweetness  Int
+  body       Int
+
+  roastPreference RoastLevel
+  flavorNotes     String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
