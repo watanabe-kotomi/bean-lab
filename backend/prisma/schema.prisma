@@ -43,7 +43,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tasteProfile TasteProfile?
+  tasteProfile         TasteProfile?
+  userBeanInteractions UserBeanInteraction[]
 }
 
 model CoffeeBean {
@@ -69,7 +70,8 @@ model CoffeeBean {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  translations BeanTranslation[]
+  translations         BeanTranslation[]
+  userBeanInteractions UserBeanInteraction[]
 
   @@index([isActive])
 }
@@ -104,4 +106,31 @@ model TasteProfile {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserBeanInteraction {
+  id String @id @default(uuid())
+
+  userId String
+  beanId String
+
+  type  InteractionType
+  value Float? // ratingや強度（任意）
+
+  createdAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bean CoffeeBean @relation(fields: [beanId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([beanId])
+  @@index([userId, beanId])
+}
+
+enum InteractionType {
+  VIEW
+  LIKE
+  DISLIKE
+  FAVORITE
+  RATING
 }
